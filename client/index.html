@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DuoParty — Deniz & Nehir Sineması 🍿</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <div id="app">
+    <!-- 1. GİRİŞ EKRANI (PROFIL & ODA SEÇİMİ) -->
+    <div id="login-modal" class="modal-backdrop">
+      <div class="login-card glass">
+        <div class="login-header">
+          <div class="brand-badge">
+            <span class="brand-icon">🍿</span>
+            <span class="brand-text">DuoParty</span>
+          </div>
+          <h2>Hoş Geldiniz ❤️</h2>
+          <p class="subtitle">Deniz & Nehir Özel Sinema Odası</p>
+        </div>
+
+        <form id="login-form">
+          <label class="form-label">Kim Giriş Yapıyor?</label>
+          <div class="user-select-row">
+            <button type="button" class="user-chip user-deniz active" data-user="Deniz">
+              <span class="chip-avatar">👦</span>
+              <span class="chip-name">Deniz</span>
+            </button>
+            <button type="button" class="user-chip user-nehir" data-user="Nehir">
+              <span class="chip-avatar">👧</span>
+              <span class="chip-name">Nehir</span>
+            </button>
+          </div>
+
+          <div class="form-group">
+            <label for="room-input" class="form-label">Oda Kodu</label>
+            <div class="input-wrap">
+              <span class="input-icon">🔑</span>
+              <input type="text" id="room-input" value="deniz-nehir" placeholder="Oda adı" required>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block">
+            <span>Odaya Giriş Yap</span>
+            <span class="btn-arrow">→</span>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- 2. PLATFORM SEÇİM MODALI (YouTube vs Netflix) -->
+    <div id="platform-modal" class="modal-backdrop hidden">
+      <div class="platform-card glass">
+        <div class="modal-header">
+          <h2>Ne İzlemek İstersiniz?</h2>
+          <p class="subtitle">Birlikte izlemek için bir platform seçin</p>
+        </div>
+
+        <div class="platform-grid">
+          <!-- YouTube Card -->
+          <div class="platform-choice-card youtube-card" data-platform="youtube">
+            <div class="platform-glow"></div>
+            <div class="platform-icon-wrap">
+              <svg viewBox="0 0 24 24" width="44" height="44" fill="currentColor">
+                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+              </svg>
+            </div>
+            <h3>YouTube</h3>
+            <p>Video, klip ve filmleri doğrudan web sayfasında tam senkronize izleyin.</p>
+            <span class="card-badge">Yerleşik Oynatıcı</span>
+          </div>
+
+          <!-- Netflix Card -->
+          <div class="platform-choice-card netflix-card" data-platform="netflix">
+            <div class="platform-glow"></div>
+            <div class="platform-icon-wrap">
+              <span class="netflix-n">N</span>
+            </div>
+            <h3>Netflix</h3>
+            <p>Sanal Sinema (ekran & ses paylaşımı) ile sıfır gecikmeyle dizi & film izleyin.</p>
+            <span class="card-badge highlight">Sanal Sinema Salonu</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. ANA SİNEMA SALONU & İZLEME EKRANI -->
+    <div id="cinema-room" class="cinema-room hidden">
+      <!-- Üst Gezinme Çubuğu (Navbar) -->
+      <header class="navbar glass">
+        <div class="nav-left">
+          <div class="brand-badge small">
+            <span class="brand-icon">🍿</span>
+            <span class="brand-text">DuoParty</span>
+          </div>
+          <button id="btn-switch-platform" class="btn btn-outline btn-sm">
+            <span id="current-platform-icon">🎬</span>
+            <span id="current-platform-name">Platform Değiştir</span>
+          </button>
+        </div>
+
+        <div class="nav-center">
+          <div class="room-pill">
+            <span class="room-pill-icon">🚪</span>
+            <span>Oda:</span>
+            <strong id="display-room-id">deniz-nehir</strong>
+          </div>
+          <div id="connection-status" class="status-badge connecting">
+            <span class="status-dot"></span>
+            <span id="status-text">Bağlanıyor...</span>
+          </div>
+        </div>
+
+        <div class="nav-right">
+          <div class="user-greeting">
+            <span id="my-avatar" class="greeting-avatar">👦</span>
+            <span id="my-name" class="greeting-name">Deniz</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Ana İçerik Grid (Oynatıcı + Yan Panel) -->
+      <main class="cinema-main">
+        <!-- Sol Alan: Video Oynatıcı Alanı -->
+        <section class="player-section">
+          <!-- A) YOUTUBE MODU -->
+          <div id="youtube-stage" class="stage-container">
+            <div class="yt-search-bar glass">
+              <div class="input-wrap flex-grow">
+                <span class="input-icon">🔗</span>
+                <input type="text" id="yt-url-input" placeholder="YouTube video linkini veya ID'sini yapıştırın... (Örn: https://youtu.be/...)">
+              </div>
+              <button id="btn-load-yt" class="btn btn-danger">
+                <span>Oynat</span>
+                <span class="btn-arrow">▶</span>
+              </button>
+            </div>
+
+            <!-- YouTube Video Kutusu -->
+            <div class="video-aspect-box glass">
+              <div id="yt-player-target"></div>
+              <div id="yt-overlay-notice" class="video-overlay-notice hidden">
+                <span class="overlay-icon">⏸️</span>
+                <span class="overlay-text">Video Durduruldu</span>
+              </div>
+            </div>
+
+            <!-- YouTube Alt Kontroller -->
+            <div class="playback-controls-bar glass">
+              <div class="controls-left">
+                <button id="btn-play-pause" class="btn btn-icon" title="Oynat / Durdur">
+                  <span id="icon-play-pause">▶️</span>
+                </button>
+                <button id="btn-resync" class="btn btn-outline btn-sm" title="Eşzamanlama Yap">
+                  <span>🔄 Partnerimle Eşitle</span>
+                </button>
+              </div>
+
+              <div class="controls-center">
+                <div class="time-display">
+                  <span id="yt-current-time">00:00</span> / <span id="yt-duration">00:00</span>
+                </div>
+              </div>
+
+              <div class="controls-right">
+                <button id="btn-fullscreen-yt" class="btn btn-icon" title="Tam Ekran">
+                  ⛶
+                </button>
+              </div>
+            </div>
+
+            <!-- Hızlı Örnek / Popüler Videolar -->
+            <div class="quick-presets">
+              <span class="presets-title">Hızlı Öneriler:</span>
+              <button class="preset-pill" data-video="jfKfPfyJRdk">🎶 Lofi Hip Hop Canlı</button>
+              <button class="preset-pill" data-video="5qap5aO4i9A">✨ Lofi Beats Rahatlatıcı</button>
+              <button class="preset-pill" data-video="LXb3EKWsInQ">🌊 Doğa 4K Dinlendirici</button>
+            </div>
+          </div>
+
+          <!-- B) NETFLIX MODU (Sanal Sinema Salonu & Ekran Paylaşımı) -->
+          <div id="netflix-stage" class="stage-container hidden">
+            <div class="netflix-header-bar glass">
+              <div class="netflix-brand">
+                <span class="netflix-n-small">N</span>
+                <div>
+                  <h4>Netflix Sanal Sinema Salonu</h4>
+                  <p>Ekranınızı Netflix sekmesiyle sesi açık şekilde paylaşın, birlikte izleyin.</p>
+                </div>
+              </div>
+
+              <div class="netflix-actions">
+                <button id="btn-start-screenshare" class="btn btn-netflix">
+                  <span class="btn-icon">📺</span>
+                  <span id="screenshare-btn-text">Netflix Sekmesini Paylaş</span>
+                </button>
+                <a href="https://www.netflix.com" target="_blank" class="btn btn-outline btn-sm">
+                  <span>Netflix'i Yeni Sekmede Aç</span> ↗
+                </a>
+              </div>
+            </div>
+
+            <!-- Netflix Video Stream Ekranı -->
+            <div class="video-aspect-box netflix-box glass" id="netflix-video-container">
+              <video id="remote-screen-video" autoplay playsinline></video>
+              
+              <!-- Ekran Paylaşımı Başlatılmadığında Gösterilen Bilgi Ekranı -->
+              <div id="screen-share-placeholder" class="screen-placeholder">
+                <div class="placeholder-content">
+                  <div class="netflix-big-icon">🍿</div>
+                  <h3>Netflix Sanal Sinema Bekleniyor</h3>
+                  <p>Deniz veya Nehir <strong>"Netflix Sekmesini Paylaş"</strong> butonuna basarak dizi veya filmi başlattığında görüntü burada canlı akacaktır.</p>
+                  
+                  <div class="tip-box">
+                    <strong>💡 İpucu:</strong> Paylaşım penceresi açıldığında <em>"Chrome Sekmesi" -> "Netflix"</em> seçin ve sol alttaki <strong>"Sekme sesini de paylaş"</strong> kutucuğunu işaretleyin!
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Netflix Stream Alt Kontrolleri -->
+            <div class="playback-controls-bar glass">
+              <div class="controls-left">
+                <span class="badge-live">🔴 CANLI YAYIN</span>
+                <span id="screen-share-host-info" class="stream-info">Yayın bekleniyor...</span>
+              </div>
+              <div class="controls-right">
+                <button id="btn-fullscreen-netflix" class="btn btn-icon" title="Tam Ekran">
+                  ⛶
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Sağ Alan: Sesli Sohbet ve Aktivite Paneli -->
+        <aside class="sidebar-section">
+          <!-- Sesli Sohbet Kartı -->
+          <div class="voice-card glass">
+            <div class="card-header">
+              <div class="header-title">
+                <span class="header-icon">🎙️</span>
+                <h3>Sesli Sohbet</h3>
+              </div>
+              <span id="voice-connection-badge" class="badge-voice disconnected">Bağlı Değil</span>
+            </div>
+
+            <!-- Deniz & Nehir Profil Kartları -->
+            <div class="users-voice-grid">
+              <!-- Kullanıcı 1: Deniz -->
+              <div class="user-voice-item" id="voice-user-deniz">
+                <div class="avatar-ring-container">
+                  <div class="speaking-aura" id="aura-deniz"></div>
+                  <div class="user-avatar-circle deniz-avatar">👦</div>
+                  <span class="mic-status-icon" id="mic-icon-deniz">🎤</span>
+                </div>
+                <div class="user-meta">
+                  <span class="user-name">Deniz</span>
+                  <span class="user-state" id="state-deniz">Çevrimdışı</span>
+                </div>
+              </div>
+
+              <div class="heart-divider">❤️</div>
+
+              <!-- Kullanıcı 2: Nehir -->
+              <div class="user-voice-item" id="voice-user-nehir">
+                <div class="avatar-ring-container">
+                  <div class="speaking-aura" id="aura-nehir"></div>
+                  <div class="user-avatar-circle nehir-avatar">👧</div>
+                  <span class="mic-status-icon" id="mic-icon-nehir">🎤</span>
+                </div>
+                <div class="user-meta">
+                  <span class="user-name">Nehir</span>
+                  <span class="user-state" id="state-nehir">Bekleniyor...</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Ses Kontrol Düğmeleri -->
+            <div class="voice-controls">
+              <button id="btn-toggle-mic" class="btn btn-primary btn-block">
+                <span id="mic-btn-icon">🎙️</span>
+                <span id="mic-btn-label">Mikrofonu Aç</span>
+              </button>
+
+              <div class="volume-slider-group">
+                <div class="volume-label-row">
+                  <span>Partnerin Ses Seviyesi</span>
+                  <span id="partner-volume-val">100%</span>
+                </div>
+                <input type="range" id="slider-partner-volume" min="0" max="100" value="100" class="custom-slider">
+              </div>
+            </div>
+          </div>
+
+          <!-- Canlı Aktivite / Olay Bildirim Akışı -->
+          <div class="activity-card glass">
+            <div class="card-header small">
+              <h4>Canlı Senkron Günlüğü</h4>
+            </div>
+            <div id="activity-log" class="activity-log">
+              <div class="log-item system">
+                <span class="log-time">Şimdi</span>
+                <span class="log-msg">🍿 DuoParty Sinemasına hoş geldiniz!</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <!-- Toast Bildirimleri -->
+    <div id="toast-container" class="toast-container"></div>
+  </div>
+
+  <!-- Audio Element: Partnerin Sesini Çalmak İçin -->
+  <audio id="remote-voice-audio" autoplay playsinline></audio>
+
+  <!-- YouTube IFrame API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <!-- Ana Uygulama Scripti -->
+  <script src="app.js"></script>
+</body>
+</html>

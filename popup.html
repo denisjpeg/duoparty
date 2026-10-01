@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>DuoParty Ayarları</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    body {
+      width: 320px;
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 16px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #1e293b;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo {
+      font-size: 26px;
+    }
+    h1 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+    p.subtitle {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+    .status-pill {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 12px;
+      text-transform: uppercase;
+    }
+    .status-pill.active {
+      background: rgba(46, 204, 113, 0.2);
+      color: #2ecc71;
+      border: 1px solid rgba(46, 204, 113, 0.3);
+    }
+    .status-pill.inactive {
+      background: rgba(148, 163, 184, 0.15);
+      color: #94a3b8;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+    }
+    .main-toggle-btn {
+      width: 100%;
+      padding: 13px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+    }
+    .main-toggle-btn.start {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+    }
+    .main-toggle-btn.start:hover {
+      background: linear-gradient(135deg, #059669, #047857);
+    }
+    .main-toggle-btn.stop {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+    }
+    .main-toggle-btn.stop:hover {
+      background: linear-gradient(135deg, #dc2626, #b91c1c);
+    }
+    .form-group {
+      margin-bottom: 14px;
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-bottom: 6px;
+    }
+    .user-select-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .user-btn {
+      padding: 10px;
+      background: #1e293b;
+      border: 2px solid #334155;
+      border-radius: 10px;
+      color: #94a3b8;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .user-btn:hover {
+      background: #273549;
+    }
+    .user-btn.active {
+      border-color: #3b82f6;
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+    }
+    .user-btn.active.nehir {
+      border-color: #ec4899;
+      background: rgba(236, 72, 153, 0.15);
+      color: #f472b6;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 9px 12px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus {
+      border-color: #38bdf8;
+    }
+    .info-card {
+      margin-top: 14px;
+      padding: 10px;
+      background: #1e293b;
+      border-radius: 8px;
+      font-size: 11px;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">🍿</div>
+      <div>
+        <h1>DuoParty</h1>
+        <p class="subtitle">Deniz & Nehir Özel ❤️</p>
+      </div>
+    </div>
+    <span class="status-pill inactive" id="statusPill">Kapalı</span>
+  </div>
+
+  <!-- Big Start / Stop Button -->
+  <button class="main-toggle-btn start" id="mainToggleBtn">
+    <span id="btnIcon">▶️</span>
+    <span id="btnText">DuoParty'yi Başlat</span>
+  </button>
+
+  <div class="form-group">
+    <label>Kullanıcı Seçimi</label>
+    <div class="user-select-grid">
+      <button class="user-btn active" id="btnUserDeniz" type="button">👦 Deniz</button>
+      <button class="user-btn nehir" id="btnUserNehir" type="button">👧 Nehir</button>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label for="roomId">Oda Adı</label>
+    <input type="text" id="roomId" value="deniz-nehir" placeholder="Örn: deniz-nehir">
+  </div>
+
+  <div class="info-card">
+    💡 <strong>Nasıl Kullanılır?</strong><br>
+    Birlikte izlemek istediğinizde <strong>DuoParty'yi Başlat</strong>'a tıklayın. Tek başınıza izlerken kapalı tutabilir veya paneldeki <strong>❌</strong> ile hemen kapatabilirsiniz.
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
